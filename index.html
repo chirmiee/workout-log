@@ -87,8 +87,14 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🏋 Workout Progress Log</h1>
-    <div class="sub">Pick a muscle group and/or an exercise to see its full history.</div>
+    <div>
+      <h1>🏋 Workout Progress Log</h1>
+      <div class="sub">Pick a muscle group and/or an exercise to see its full history.</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
+      <button class="btn" id="pushBtn" style="display:none;">↑ Push to GitHub</button>
+      <button class="btn secondary" id="settingsBtn" title="GitHub settings">⚙ GitHub</button>
+    </div>
   </header>
 
   <div id="volumeChart" style="background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 24px 12px;margin-bottom:20px;"></div>
@@ -860,6 +866,187 @@ async function init(){
   render();
 }
 init();
+</script>
+<!-- GitHub Settings Modal -->
+<div class="overlay" id="ghSettingsOverlay">
+  <div class="modal" style="max-width:460px;">
+    <h2>GitHub Connection</h2>
+    <p class="sub" style="margin-bottom:18px;">Connect once — after that, new workouts push automatically from this page.</p>
+
+    <div class="field" style="margin-bottom:12px;">
+      <label>GitHub Username</label>
+      <input type="text" id="ghOwner" placeholder="e.g. johnsmith" style="width:100%;">
+    </div>
+    <div class="field" style="margin-bottom:12px;">
+      <label>Repository Name</label>
+      <input type="text" id="ghRepo" placeholder="e.g. workout-log" style="width:100%;">
+    </div>
+    <div class="field" style="margin-bottom:6px;">
+      <label>Personal Access Token</label>
+      <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;">
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);margin-bottom:16px;">
+      To create a token: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → tick <strong>repo</strong> → Generate.<br>
+      Your token is stored only in this browser — never sent anywhere except GitHub.
+    </p>
+    <div id="ghSettingsErr" style="color:#f29b9b;font-size:.82rem;margin-bottom:8px;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <button class="btn ghost" id="ghSettingsCancel">Cancel</button>
+      <button class="btn" id="ghSettingsSave">Save &amp; Test Connection</button>
+    </div>
+  </div>
+</div>
+
+<!-- Push to GitHub Modal -->
+<div class="overlay" id="ghPushOverlay">
+  <div class="modal" style="max-width:560px;">
+    <h2>Push New Session to GitHub</h2>
+    <p class="sub" style="margin-bottom:14px;">Paste the full <code style="background:var(--panel2);padding:2px 6px;border-radius:4px;">data.json</code> content from Claude below, then click Push.</p>
+    <textarea id="ghJsonInput" rows="10"
+      style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:10px;font-family:monospace;font-size:.8rem;resize:vertical;"
+      placeholder='Paste the full data.json content here — it starts with [ and ends with ]'></textarea>
+    <div id="ghPushStatus" style="font-size:.82rem;margin:10px 0;min-height:20px;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;">
+      <button class="btn ghost" id="ghPushCancel">Cancel</button>
+      <button class="btn" id="ghPushConfirm">↑ Push to GitHub</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── GitHub Sync ───────────────────────────────────────────────────────────────
+(function(){
+  const KEYS = { owner:'gh_owner', repo:'gh_repo', token:'gh_token' };
+  const cfg = () => ({ owner: localStorage.getItem(KEYS.owner)||'',
+                        repo:  localStorage.getItem(KEYS.repo)||'',
+                        token: localStorage.getItem(KEYS.token)||'' });
+  const isConfigured = () => { const c=cfg(); return c.owner && c.repo && c.token; };
+
+  const pushBtn       = document.getElementById('pushBtn');
+  const settingsBtn   = document.getElementById('settingsBtn');
+  const settingsOvl   = document.getElementById('ghSettingsOverlay');
+  const pushOvl       = document.getElementById('ghPushOverlay');
+
+  function updatePushButton(){
+    pushBtn.style.display = isConfigured() ? 'inline-flex' : 'none';
+  }
+  updatePushButton();
+
+  // ── Settings modal ──
+  settingsBtn.addEventListener('click', () => {
+    const c = cfg();
+    document.getElementById('ghOwner').value = c.owner;
+    document.getElementById('ghRepo').value  = c.repo;
+    document.getElementById('ghToken').value = c.token;
+    document.getElementById('ghSettingsErr').textContent = '';
+    settingsOvl.classList.add('open');
+  });
+  document.getElementById('ghSettingsCancel').addEventListener('click', () => settingsOvl.classList.remove('open'));
+  settingsOvl.addEventListener('click', e => { if(e.target===settingsOvl) settingsOvl.classList.remove('open'); });
+
+  document.getElementById('ghSettingsSave').addEventListener('click', async () => {
+    const owner = document.getElementById('ghOwner').value.trim();
+    const repo  = document.getElementById('ghRepo').value.trim();
+    const token = document.getElementById('ghToken').value.trim();
+    const errEl = document.getElementById('ghSettingsErr');
+    const btn   = document.getElementById('ghSettingsSave');
+
+    if(!owner || !repo || !token){ errEl.textContent = 'All three fields are required.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Testing…';
+    errEl.textContent = '';
+
+    try{
+      const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.json`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+      });
+      if(r.status === 401){ throw new Error('Token rejected — make sure it has the repo permission.'); }
+      if(r.status === 404){ throw new Error(`Repository "${owner}/${repo}" not found. Double-check the name.`); }
+      if(!r.ok){ throw new Error(`GitHub returned error ${r.status}.`); }
+
+      localStorage.setItem(KEYS.owner, owner);
+      localStorage.setItem(KEYS.repo, repo);
+      localStorage.setItem(KEYS.token, token);
+      updatePushButton();
+      settingsOvl.classList.remove('open');
+    } catch(e){
+      errEl.textContent = e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save & Test Connection';
+    }
+  });
+
+  // ── Push modal ──
+  pushBtn.addEventListener('click', () => {
+    document.getElementById('ghJsonInput').value = '';
+    document.getElementById('ghPushStatus').textContent = '';
+    document.getElementById('ghPushConfirm').disabled = false;
+    document.getElementById('ghPushConfirm').textContent = '↑ Push to GitHub';
+    pushOvl.classList.add('open');
+  });
+  document.getElementById('ghPushCancel').addEventListener('click', () => pushOvl.classList.remove('open'));
+  pushOvl.addEventListener('click', e => { if(e.target===pushOvl) pushOvl.classList.remove('open'); });
+
+  document.getElementById('ghPushConfirm').addEventListener('click', async () => {
+    const raw = document.getElementById('ghJsonInput').value.trim();
+    const statusEl = document.getElementById('ghPushStatus');
+    const btn = document.getElementById('ghPushConfirm');
+
+    if(!raw){ statusEl.style.color='#f29b9b'; statusEl.textContent='Paste the data.json content first.'; return; }
+
+    let parsed;
+    try{ parsed = JSON.parse(raw); }
+    catch(e){ statusEl.style.color='#f29b9b'; statusEl.textContent='Invalid JSON — check the content Claude gave you.'; return; }
+
+    if(!Array.isArray(parsed)){ statusEl.style.color='#f29b9b'; statusEl.textContent='data.json should be a list starting with [ — make sure you copied all of it.'; return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Pushing…';
+    statusEl.style.color='var(--muted)';
+    statusEl.textContent = 'Reading current file from GitHub…';
+
+    const { owner, repo, token } = cfg();
+
+    try{
+      // Step 1: get current SHA
+      const getResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.json`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+      });
+      if(!getResp.ok) throw new Error(`Could not read current file (${getResp.status})`);
+      const fileInfo = await getResp.json();
+
+      // Step 2: encode and push
+      statusEl.textContent = 'Uploading new data…';
+      const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(parsed, null, 2))));
+      const latestDate = [...parsed].sort((a,b)=>b.date>a.date?1:-1)[0]?.date || 'update';
+
+      const putResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.json`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
+        body: JSON.stringify({ message: `Workout session ${latestDate}`, content: newContent, sha: fileInfo.sha })
+      });
+      if(!putResp.ok){
+        const err = await putResp.json();
+        throw new Error(err.message || `GitHub error ${putResp.status}`);
+      }
+
+      statusEl.style.color='#7fe3a3';
+      statusEl.textContent = '✓ Pushed! Netlify is redeploying — this page will refresh in 35 seconds…';
+      btn.textContent = '✓ Done';
+
+      // Auto-refresh after Netlify redeploys
+      setTimeout(() => { window.location.reload(); }, 35000);
+
+    } catch(e){
+      statusEl.style.color='#f29b9b';
+      statusEl.textContent = 'Error: ' + e.message;
+      btn.disabled = false;
+      btn.textContent = '↑ Push to GitHub';
+    }
+  });
+})();
 </script>
 </body>
 </html>
