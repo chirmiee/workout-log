@@ -75,6 +75,20 @@
     pointer-events:none; z-index:100; display:none; line-height:1.5;
     box-shadow:0 4px 16px rgba(0,0,0,.4);
   }
+  /* Modals */
+  .overlay{position:fixed;inset:0;background:rgba(5,7,14,.75);display:none;align-items:center;justify-content:center;padding:20px;z-index:200;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;max-width:760px;width:100%;max-height:88vh;overflow-y:auto;padding:24px;}
+  .modal h2{margin:0 0 4px;}
+  .modal .sub{margin-bottom:18px;}
+  .field label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .btn{appearance:none;border:1px solid var(--border);background:var(--accent);color:#fff;font-weight:600;font-size:.86rem;padding:10px 16px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn.secondary{background:var(--panel2);color:var(--text);}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
   ::selection{background:#3a4a8a;}
 
   /* Body diagram */
@@ -82,7 +96,25 @@
   #bodyDiagramPanel h3{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:center;margin:0 0 10px;}
   .muscle-path{transition:fill .2s, opacity .2s;}
   .bd-label{font-family:Arial,sans-serif;}
+
+  /* Upload + review styles */
+  .dropzone{border:2px dashed var(--border);border-radius:12px;padding:28px 20px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;margin-bottom:14px;}
+  .dropzone:hover{border-color:var(--accent);color:var(--text);}
+  .dropzone img{max-width:100%;max-height:200px;border-radius:8px;margin-top:10px;}
+  .review-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+  .review-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ex-block{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--panel2);}
+  .ex-block-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .ex-block-head input[type=text]{flex:1;font-weight:600;}
+  .set-row{display:grid;grid-template-columns:24px 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px;}
+  .set-row span{font-size:.72rem;color:var(--muted);}
+  .icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;}
+  .icon-btn:hover{color:#f29b9b;}
+  .small-btn{font-size:.78rem;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--accent);cursor:pointer;}
+  .upload-status{font-size:.82rem;margin:8px 0;min-height:18px;}
+  @media(max-width:600px){.review-row{grid-template-columns:1fr;}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.3/heic2any.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -93,6 +125,7 @@
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
       <button class="btn" id="pushBtn" style="display:none;">↑ Push to GitHub</button>
+      <button class="btn" id="uploadWorkoutBtn">📷 Upload Workout</button>
       <button class="btn secondary" id="settingsBtn" title="GitHub settings">⚙ GitHub</button>
     </div>
   </header>
@@ -867,6 +900,56 @@ async function init(){
 }
 init();
 </script>
+<!-- Upload Workout Modal -->
+<div class="overlay" id="uploadOverlay">
+  <div class="modal" style="max-width:620px;">
+    <h2>Upload Today's Diary Page</h2>
+    <div class="sub" style="margin-bottom:16px;">Take or choose a clear photo — Claude will read the handwriting and pull out your workout.</div>
+    <div class="dropzone" id="uploadDz">
+      📷 Tap to choose a photo<br>
+      <span style="font-size:.76rem;">JPG, PNG or iPhone HEIC all work</span>
+      <div id="uploadPreview"></div>
+    </div>
+    <input type="file" id="uploadFileInput" accept="image/*,.heic,.heif" style="display:none;">
+    <div id="uploadStatus" class="upload-status"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;">
+      <button class="btn ghost" id="uploadCancel">Cancel</button>
+      <button class="btn" id="uploadParseBtn" disabled>Parse with AI</button>
+    </div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div class="overlay" id="reviewOverlay">
+  <div class="modal" style="max-width:680px;">
+    <h2>Review Before Saving</h2>
+    <div class="sub" style="margin-bottom:14px;">Check the numbers — fix anything wrong, then save.</div>
+    <div class="review-grid">
+      <div class="review-row">
+        <div class="field"><label>Date</label><input type="text" id="rv_date" style="width:100%;"></div>
+        <div class="field"><label>Muscle Group</label><input type="text" id="rv_muscle" style="width:100%;"></div>
+      </div>
+      <div class="review-row">
+        <div class="field"><label>Satisfaction %</label><input type="number" id="rv_sat" min="0" max="100" style="width:100%;"></div>
+        <div class="field"><label>Session Type</label>
+          <select id="rv_type" style="width:100%;">
+            <option value="Self">Self</option>
+            <option value="Coach">Coach</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Notes</label><input type="text" id="rv_notes" style="width:100%;"></div>
+    </div>
+    <div id="rvExList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;max-height:320px;overflow-y:auto;"></div>
+    <button class="small-btn" id="rvAddEx" style="margin-bottom:12px;">+ Add exercise</button>
+    <div id="rvError" style="color:#f29b9b;font-size:.82rem;margin-bottom:8px;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <button class="btn ghost" id="rvBack">← Re-upload</button>
+      <button class="btn" id="rvSave">✓ Save &amp; Push to GitHub</button>
+    </div>
+  </div>
+</div>
+
 <!-- GitHub Settings Modal -->
 <div class="overlay" id="ghSettingsOverlay">
   <div class="modal" style="max-width:460px;">
@@ -1047,6 +1130,320 @@ init();
     }
   });
 })();
+</script>
+<script>
+// ── Upload Workout Flow ──────────────────────────────────────────────────────
+(function(){
+
+  const uploadOverlay  = document.getElementById('uploadOverlay');
+  const reviewOverlay  = document.getElementById('reviewOverlay');
+  const uploadBtn      = document.getElementById('uploadWorkoutBtn');
+  const uploadCancel   = document.getElementById('uploadCancel');
+  const uploadDz       = document.getElementById('uploadDz');
+  const fileInput      = document.getElementById('uploadFileInput');
+  const uploadPreview  = document.getElementById('uploadPreview');
+  const uploadStatus   = document.getElementById('uploadStatus');
+  const parseBtn       = document.getElementById('uploadParseBtn');
+
+  let base64Data = null, mediaType = null;
+
+  // ── Open / close ──────────────────────────
+  uploadBtn.addEventListener('click', openUpload);
+  uploadCancel.addEventListener('click', closeUpload);
+  uploadOverlay.addEventListener('click', e => { if(e.target===uploadOverlay) closeUpload(); });
+  document.getElementById('rvBack').addEventListener('click', () => { reviewOverlay.classList.remove('open'); openUpload(); });
+  reviewOverlay.addEventListener('click', e => { if(e.target===reviewOverlay) reviewOverlay.classList.remove('open'); });
+
+  function openUpload(){
+    base64Data = null; mediaType = null;
+    uploadPreview.innerHTML = '';
+    uploadStatus.innerHTML = '';
+    parseBtn.disabled = true;
+    uploadOverlay.classList.add('open');
+  }
+  function closeUpload(){
+    uploadOverlay.classList.remove('open');
+  }
+
+  // ── File select ───────────────────────────
+  uploadDz.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if(!file) return;
+
+    const isHeic = file.type==='image/heic' || file.type==='image/heif' ||
+                   /\.heic$/i.test(file.name) || /\.heif$/i.test(file.name);
+    const isUnsupported = !isHeic && !file.type.startsWith('image/');
+
+    if(isUnsupported){
+      uploadStatus.innerHTML = '<span style="color:#f29b9b">This doesn\'t look like an image file.</span>';
+      parseBtn.disabled = true; return;
+    }
+
+    parseBtn.disabled = true;
+    let workingFile = file;
+
+    if(isHeic){
+      uploadStatus.innerHTML = '<span class="spinner"></span> Converting HEIC…';
+      try{
+        const blob = await heic2any({ blob: file, toType:'image/jpeg', quality:0.88 });
+        workingFile = blob instanceof Blob ? blob : blob[0];
+        uploadStatus.textContent = 'Converted from HEIC ✓';
+      } catch(e){
+        uploadStatus.innerHTML = '<span style="color:#f29b9b">HEIC conversion failed. Try converting on your phone first.</span>';
+        return;
+      }
+    } else {
+      uploadStatus.innerHTML = '<span class="spinner"></span> Compressing…';
+    }
+
+    // Resize via canvas (data: URL — works in sandboxed contexts)
+    try {
+      const dataUrl = await resizeToDataUrl(workingFile, 1568, 0.85);
+      base64Data = dataUrl.split(',')[1];
+      mediaType  = 'image/jpeg';
+      uploadPreview.innerHTML = '<img src="' + dataUrl + '">';
+      const kb = Math.round(base64Data.length * 0.75 / 1024);
+      uploadStatus.textContent = (isHeic ? 'Converted from HEIC. ' : '') + 'Ready (' + kb + ' KB)';
+      parseBtn.disabled = false;
+    } catch(e) {
+      uploadStatus.innerHTML = '<span style="color:#f29b9b">Could not process image: ' + e.message + '</span>';
+    }
+  });
+
+  function resizeToDataUrl(blobOrFile, maxDim, quality){
+    return new Promise(async (resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          try{
+            let {width:w, height:h} = img;
+            if(w>maxDim||h>maxDim){ const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+            const c = document.createElement('canvas');
+            c.width=w; c.height=h;
+            c.getContext('2d').drawImage(img,0,0,w,h);
+            resolve(c.toDataURL('image/jpeg', quality));
+          } catch(e){ reject(e); }
+        };
+        img.onerror = () => reject(new Error('Could not decode image'));
+        img.src = reader.result;
+      };
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.readAsDataURL(blobOrFile);
+    });
+  }
+
+  // ── Parse ────────────────────────────────
+  parseBtn.addEventListener('click', async () => {
+    if(!base64Data) return;
+    parseBtn.disabled = true;
+    uploadStatus.innerHTML = '<span class="spinner"></span> Reading handwriting with AI…';
+
+    const knownExercises = (typeof exerciseOrder !== 'undefined' ? exerciseOrder : []).join(', ');
+    const groupList = (typeof groupOrder !== 'undefined' ? groupOrder : []).join(', ');
+
+    try {
+      const resp = await fetch('/.netlify/functions/parse-workout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageData: base64Data, mediaType, knownExercises, groupList })
+      });
+
+      const data = await resp.json();
+
+      if(data.error){
+        throw new Error(data.error + (data.details ? ' — ' + JSON.stringify(data.details).slice(0,120) : ''));
+      }
+
+      const textBlock = (data.content||[]).find(b=>b.type==='text');
+      if(!textBlock) throw new Error('No response from Claude. Check your ANTHROPIC_API_KEY in Netlify.');
+
+      let raw = textBlock.text.trim();
+      const fi = raw.indexOf('{'), li = raw.lastIndexOf('}');
+      if(fi===-1||li===-1) throw new Error('Could not find JSON in response. Try a clearer photo.');
+      const parsed = JSON.parse(raw.slice(fi, li+1));
+
+      closeUpload();
+      showReview(parsed);
+
+    } catch(e) {
+      uploadStatus.innerHTML = '<span style="color:#f29b9b">Error: ' + e.message + '</span>';
+      parseBtn.disabled = false;
+    }
+  });
+
+  // ── Review form ──────────────────────────
+  function showReview(parsed){
+    const session = {
+      date:         parsed.date || new Date().toISOString().slice(0,10),
+      muscle:       parsed.muscle || '',
+      satisfaction: parsed.satisfaction != null ? parsed.satisfaction : '',
+      type:         'Self',
+      notes:        parsed.notes || '',
+      exercises:    (parsed.exercises||[]).map(ex=>({
+        name: ex.name||'New Exercise',
+        muscleGroup: ex.muscleGroup||'Other',
+        sets: (ex.sets||[]).map(s=>[String(s[0]||''),String(s[1]||'')])
+      }))
+    };
+
+    document.getElementById('rv_date').value   = session.date;
+    document.getElementById('rv_muscle').value = session.muscle;
+    document.getElementById('rv_sat').value    = session.satisfaction;
+    document.getElementById('rv_type').value   = session.type;
+    document.getElementById('rv_notes').value  = session.notes;
+    document.getElementById('rvError').textContent = '';
+
+    const list = document.getElementById('rvExList');
+    list.innerHTML = '';
+    session.exercises.forEach(ex => list.appendChild(makeExBlock(ex)));
+
+    reviewOverlay.classList.add('open');
+  }
+
+  function makeExBlock(ex){
+    const block = document.createElement('div');
+    block.className = 'ex-block';
+
+    const setsHtml = (ex.sets.length ? ex.sets : [['','']]).map(s=>makeSetRow(s[0],s[1])).join('');
+    block.innerHTML =
+      '<div class="ex-block-head">' +
+        '<input type="text" class="ex-name" value="' + esc(ex.name) + '" style="flex:1;font-weight:600;">' +
+        '<button type="button" class="icon-btn rm-ex" title="Remove">🗑</button>' +
+      '</div>' +
+      '<div class="sets-wrap">' + setsHtml + '</div>' +
+      '<button type="button" class="small-btn add-set">+ Add set</button>';
+
+    block.querySelector('.rm-ex').addEventListener('click', () => block.remove());
+    block.querySelector('.add-set').addEventListener('click', () => {
+      const wrap = block.querySelector('.sets-wrap');
+      wrap.insertAdjacentHTML('beforeend', makeSetRow('',''));
+      wrap.lastElementChild.querySelector('.rm-set').addEventListener('click', e => e.target.closest('.set-row').remove());
+    });
+    block.querySelectorAll('.rm-set').forEach(b => b.addEventListener('click', e => e.target.closest('.set-row').remove()));
+    return block;
+  }
+
+  function makeSetRow(reps, weight){
+    return '<div class="set-row">' +
+      '<span style="font-size:.72rem;color:var(--muted)">•</span>' +
+      '<input type="text" class="set-reps" placeholder="reps" value="' + esc(reps) + '">' +
+      '<input type="text" class="set-weight" placeholder="weight" value="' + esc(weight) + '">' +
+      '<button type="button" class="icon-btn rm-set" title="Remove">✕</button>' +
+    '</div>';
+  }
+
+  function esc(s){ return (s||'').toString().replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+  document.getElementById('rvAddEx').addEventListener('click', () => {
+    const block = makeExBlock({name:'New Exercise', muscleGroup:'Other', sets:[['','']]});
+    document.getElementById('rvExList').appendChild(block);
+  });
+
+  // ── Save → push to GitHub ─────────────────
+  document.getElementById('rvSave').addEventListener('click', async () => {
+    const errEl = document.getElementById('rvError');
+    const saveBtn = document.getElementById('rvSave');
+    errEl.textContent = '';
+
+    const date = document.getElementById('rv_date').value.trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){
+      errEl.textContent = 'Date must be YYYY-MM-DD'; return;
+    }
+
+    const satRaw = document.getElementById('rv_sat').value;
+    const newSession = {
+      date,
+      muscle:       document.getElementById('rv_muscle').value.trim(),
+      satisfaction: satRaw==='' ? null : parseInt(satRaw,10),
+      type:         document.getElementById('rv_type').value,
+      notes:        document.getElementById('rv_notes').value.trim(),
+      exercises:    []
+    };
+
+    document.querySelectorAll('#rvExList .ex-block').forEach(block => {
+      const name = block.querySelector('.ex-name').value.trim();
+      if(!name) return;
+      const sets = Array.from(block.querySelectorAll('.set-row')).map(row => [
+        row.querySelector('.set-reps').value.trim(),
+        row.querySelector('.set-weight').value.trim()
+      ]).filter(([r,w])=>r||w);
+      newSession.exercises.push({name, sets});
+    });
+
+    if(!newSession.exercises.length){ errEl.textContent = 'Add at least one exercise.'; return; }
+
+    const { owner, repo, token } = (window.__ghCfg && window.__ghCfg()) || {owner:'',repo:'',token:''};
+    if(!owner||!repo||!token){
+      errEl.textContent = 'GitHub not connected — click ⚙ GitHub in the top right first.'; return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner"></span> Pushing to GitHub…';
+
+    try {
+      // Get current data.json from GitHub
+      const getResp = await fetch('https://api.github.com/repos/'+owner+'/'+repo+'/contents/data.json', {
+        headers: { Authorization:'Bearer '+token, Accept:'application/vnd.github+json' }
+      });
+      if(!getResp.ok) throw new Error('Could not read data.json from GitHub ('+getResp.status+')');
+      const fileInfo = await getResp.json();
+      const currentData = JSON.parse(atob(fileInfo.content.replace(/\n/g,'')));
+
+      // Merge new session
+      const idx = currentData.findIndex(s=>s.date===newSession.date);
+      if(idx>=0) currentData[idx]=newSession; else currentData.push(newSession);
+      currentData.sort((a,b)=>a.date<b.date?-1:1);
+
+      // Push back
+      const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(currentData, null, 2))));
+      const putResp = await fetch('https://api.github.com/repos/'+owner+'/'+repo+'/contents/data.json', {
+        method: 'PUT',
+        headers: { Authorization:'Bearer '+token, 'Content-Type':'application/json', Accept:'application/vnd.github+json' },
+        body: JSON.stringify({ message:'Workout session '+newSession.date, content:newContent, sha:fileInfo.sha })
+      });
+      if(!putResp.ok){
+        const e=await putResp.json(); throw new Error(e.message||'GitHub error '+putResp.status);
+      }
+
+      // Update local sessions immediately so the UI shows the new data without a full reload
+      const idx2 = sessions.findIndex(s=>s.date===newSession.date);
+      if(idx2>=0) sessions[idx2]=newSession; else sessions.push(newSession);
+      sessions.sort((a,b)=>a.date<b.date?-1:1);
+      rebuildCellData();
+      populateMuscleSelect(); populateExerciseSelect(); populateTypeSelect(); populateDateSelect();
+      drawVolumeChart(); updateBodyHighlight(muscleSelect.value); render();
+
+      reviewOverlay.classList.remove('open');
+      saveBtn.disabled = false;
+      saveBtn.textContent = '✓ Save & Push to GitHub';
+
+      // Show a toast
+      const toast = document.createElement('div');
+      toast.textContent = '✓ Session saved and pushed to GitHub. Netlify redeploys in ~30s.';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#166534;color:#fff;padding:12px 22px;border-radius:10px;font-size:.85rem;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.4);';
+      document.body.appendChild(toast);
+      setTimeout(()=>toast.remove(), 6000);
+
+    } catch(e) {
+      errEl.textContent = 'Error: ' + e.message;
+      saveBtn.disabled = false;
+      saveBtn.textContent = '✓ Save & Push to GitHub';
+    }
+  });
+
+})();
+
+// Expose ghCfg to upload script (defined in GitHub sync script)
+document.addEventListener('DOMContentLoaded', () => {
+  const KEYS = { owner:'gh_owner', repo:'gh_repo', token:'gh_token' };
+  window.__ghCfg = () => ({
+    owner: localStorage.getItem(KEYS.owner)||'',
+    repo:  localStorage.getItem(KEYS.repo)||'',
+    token: localStorage.getItem(KEYS.token)||''
+  });
+});
 </script>
 </body>
 </html>
