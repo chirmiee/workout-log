@@ -2282,8 +2282,8 @@
   },
   {
     "date": "2026-07-03",
-    "muscle": "Hams, Glutes, Back",
-    "satisfaction": 70,
+    "muscle": "HAMS, GLUTES, BACK",
+    "satisfaction": null,
     "type": "Self",
     "notes": "",
     "exercises": [
@@ -2301,6 +2301,10 @@
           [
             "15",
             "40"
+          ],
+          [
+            "7",
+            "PR"
           ]
         ]
       },
