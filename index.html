@@ -1374,40 +1374,61 @@ init();
 
     if(!newSession.exercises.length){ errEl.textContent = 'Add at least one exercise.'; return; }
 
-    const { owner, repo, token } = (window.__ghCfg && window.__ghCfg()) || {owner:'',repo:'',token:''};
+    const owner = localStorage.getItem('gh_owner') || '';
+    const repo  = localStorage.getItem('gh_repo')  || '';
+    const token = localStorage.getItem('gh_token') || '';
     if(!owner||!repo||!token){
-      errEl.textContent = 'GitHub not connected — click ⚙ GitHub in the top right first.'; return;
+      errEl.textContent = 'GitHub not connected — click ⚙ GitHub in the top right first, enter your details and click Save & Test Connection.'; return;
     }
 
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<span class="spinner"></span> Pushing to GitHub…';
 
     try {
-      // Get current data.json from GitHub
+      // Step 1: get current file + SHA from GitHub
+      errEl.style.color = 'var(--muted)';
+      errEl.textContent = 'Reading data.json from GitHub…';
       const getResp = await fetch('https://api.github.com/repos/'+owner+'/'+repo+'/contents/data.json', {
         headers: { Authorization:'Bearer '+token, Accept:'application/vnd.github+json' }
       });
-      if(!getResp.ok) throw new Error('Could not read data.json from GitHub ('+getResp.status+')');
-      const fileInfo = await getResp.json();
-      const currentData = JSON.parse(atob(fileInfo.content.replace(/\n/g,'')));
+      if(getResp.status === 401) throw new Error('GitHub token rejected (401). Re-enter your token in ⚙ GitHub settings.');
+      if(getResp.status === 404) throw new Error('data.json not found in repo "'+owner+'/'+repo+'". Check the repo name in ⚙ GitHub settings.');
+      if(!getResp.ok) throw new Error('GitHub read failed (HTTP '+getResp.status+')');
 
-      // Merge new session
+      const fileInfo = await getResp.json();
+      let currentData;
+      try {
+        currentData = JSON.parse(atob(fileInfo.content.replace(/\n/g,'')));
+      } catch(e) {
+        throw new Error('Could not decode data.json from GitHub: '+e.message);
+      }
+
+      // Step 2: merge new session
       const idx = currentData.findIndex(s=>s.date===newSession.date);
       if(idx>=0) currentData[idx]=newSession; else currentData.push(newSession);
       currentData.sort((a,b)=>a.date<b.date?-1:1);
 
-      // Push back
-      const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(currentData, null, 2))));
+      // Step 3: push back
+      errEl.textContent = 'Uploading to GitHub…';
+      let newContent;
+      try {
+        newContent = btoa(unescape(encodeURIComponent(JSON.stringify(currentData, null, 2))));
+      } catch(e) {
+        throw new Error('Could not encode data.json: '+e.message);
+      }
+
       const putResp = await fetch('https://api.github.com/repos/'+owner+'/'+repo+'/contents/data.json', {
         method: 'PUT',
         headers: { Authorization:'Bearer '+token, 'Content-Type':'application/json', Accept:'application/vnd.github+json' },
         body: JSON.stringify({ message:'Workout session '+newSession.date, content:newContent, sha:fileInfo.sha })
       });
       if(!putResp.ok){
-        const e=await putResp.json(); throw new Error(e.message||'GitHub error '+putResp.status);
+        const errBody = await putResp.json().catch(()=>({}));
+        throw new Error('GitHub write failed (HTTP '+putResp.status+'): '+(errBody.message||JSON.stringify(errBody).slice(0,120)));
       }
 
-      // Update local sessions immediately so the UI shows the new data without a full reload
+      // Step 4: update local UI without reload
+      errEl.textContent = '';
       const idx2 = sessions.findIndex(s=>s.date===newSession.date);
       if(idx2>=0) sessions[idx2]=newSession; else sessions.push(newSession);
       sessions.sort((a,b)=>a.date<b.date?-1:1);
@@ -1419,7 +1440,6 @@ init();
       saveBtn.disabled = false;
       saveBtn.textContent = '✓ Save & Push to GitHub';
 
-      // Show a toast
       const toast = document.createElement('div');
       toast.textContent = '✓ Session saved and pushed to GitHub. Netlify redeploys in ~30s.';
       toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#166534;color:#fff;padding:12px 22px;border-radius:10px;font-size:.85rem;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.4);';
@@ -1427,23 +1447,14 @@ init();
       setTimeout(()=>toast.remove(), 6000);
 
     } catch(e) {
-      errEl.textContent = 'Error: ' + e.message;
+      errEl.style.color = '#f29b9b';
+      errEl.textContent = '❌ ' + e.message;
       saveBtn.disabled = false;
       saveBtn.textContent = '✓ Save & Push to GitHub';
     }
   });
 
 })();
-
-// Expose ghCfg to upload script (defined in GitHub sync script)
-document.addEventListener('DOMContentLoaded', () => {
-  const KEYS = { owner:'gh_owner', repo:'gh_repo', token:'gh_token' };
-  window.__ghCfg = () => ({
-    owner: localStorage.getItem(KEYS.owner)||'',
-    repo:  localStorage.getItem(KEYS.repo)||'',
-    token: localStorage.getItem(KEYS.token)||''
-  });
-});
 </script>
 </body>
 </html>
