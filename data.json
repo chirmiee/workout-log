@@ -2494,6 +2494,117 @@
     ]
   },
   {
+    "date": "2026-07-06",
+    "muscle": "Quads, Glutes, Delts",
+    "satisfaction": null,
+    "type": "Coach",
+    "notes": "Multiple PRs noted on hip thrust and OHP",
+    "exercises": [
+      {
+        "name": "Leg Extn",
+        "sets": [
+          [
+            "15",
+            "7"
+          ],
+          [
+            "12",
+            "8"
+          ],
+          [
+            "15",
+            "10"
+          ],
+          [
+            "8",
+            "11"
+          ]
+        ]
+      },
+      {
+        "name": "Cable Squat",
+        "sets": [
+          [
+            "12",
+            "24"
+          ],
+          [
+            "12",
+            "28"
+          ],
+          [
+            "15",
+            "28"
+          ]
+        ]
+      },
+      {
+        "name": "Split Squat (Quads)",
+        "sets": [
+          [
+            "15",
+            "8kb"
+          ],
+          [
+            "15",
+            "10kb"
+          ],
+          [
+            "15",
+            "10kb"
+          ]
+        ]
+      },
+      {
+        "name": "Hip Thrust",
+        "sets": [
+          [
+            "15",
+            "15x2"
+          ],
+          [
+            "10",
+            "25x2"
+          ],
+          [
+            "10",
+            "30x2"
+          ]
+        ]
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": [
+          [
+            "15",
+            "4x2"
+          ],
+          [
+            "15",
+            "5x2"
+          ],
+          [
+            "14",
+            "5x2"
+          ]
+        ]
+      },
+      {
+        "name": "Seated DB OHP",
+        "sets": [
+          [
+            "15",
+            "10x2"
+          ],
+          [
+            "8",
+            "12.5x2"
+          ]
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-07-07",
     "muscle": "Back, Bi",
     "satisfaction": 70,
