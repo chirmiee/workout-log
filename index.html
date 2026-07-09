@@ -582,13 +582,11 @@ function renderExerciseCard(exName, typeFilter){
     }
 
     const sat = s.satisfaction;
-    const vol = sessionVolume(sets);
     const typeTag = s.type ? `<span style="font-size:.68rem;font-weight:500;color:${s.type==='Coach'?'#60a5fa':'#a3e635'};margin-left:6px;">${s.type}</span>` : '';
     const personTag = (s.person && s.person !== 'Juni') ? `<span style="font-size:.68rem;font-weight:500;color:#f59e0b;margin-left:4px;">${s.person}</span>` : '';
     return `<tr title="${pr.note ? pr.note : ''}">
       <td class="date-cell">${s.date}${typeTag}${personTag}</td>
       ${setCells}
-      <td style="color:var(--muted);font-size:.82rem;">${vol !== null ? vol + ' kg' : '—'}</td>
       <td class="${satClass(sat)}">${sat !== null && sat !== undefined ? sat + '%' : '—'}</td>
       <td class="notes-cell">${s.notes ? s.notes : ''}</td>
     </tr>`;
@@ -665,11 +663,9 @@ function renderDayCard(date){
       </td>`;
     }
 
-    const vol = sessionVolume(sets);
     return `<tr title="${pr.note ? pr.note : ''}">
       <td class="date-cell">${ex.name}<div style="font-weight:400;font-size:.7rem;color:var(--muted);">${group}</div></td>
       ${setCells}
-      <td style="color:var(--muted);font-size:.82rem;">${vol !== null ? vol + ' kg' : '—'}</td>
     </tr>`;
   });
 
