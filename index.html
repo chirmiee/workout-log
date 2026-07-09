@@ -147,6 +147,10 @@
       <select id="typeSelect"></select>
     </div>
     <div class="field">
+      <label for="personSelect">Person</label>
+      <select id="personSelect"></select>
+    </div>
+    <div class="field">
       <label for="dateSelect">Date</label>
       <select id="dateSelect"></select>
     </div>
@@ -380,15 +384,6 @@ function repsValue(r){
   const m = r.toString().match(/^(\d+)/);
   return m ? parseInt(m[1],10) : null;
 }
-function sessionVolume(sets){
-  let total = 0;
-  sets.forEach(([r, w]) => {
-    const rv = repsValue(r);
-    const wv = loadValue(w);
-    if(rv !== null && wv !== null && wv > 0) total += rv * wv;
-  });
-  return total > 0 ? Math.round(total) : null;
-}
 function topSetLoad(sets){
   let vals = sets.map(([r,w]) => loadValue(w)).filter(v => v !== null);
   return vals.length ? Math.max(...vals) : null;
@@ -444,7 +439,24 @@ function computePrFlags(exName){
 const muscleSelect = document.getElementById('muscleSelect');
 const exerciseSelect = document.getElementById('exerciseSelect');
 const typeSelect = document.getElementById('typeSelect');
+const personSelect = document.getElementById('personSelect');
 const dateSelect = document.getElementById('dateSelect');
+
+function populatePersonSelect(){
+  const prevVal = personSelect.value || "__all__";
+  personSelect.innerHTML = '';
+  const optAll = document.createElement('option');
+  optAll.value = "__all__"; optAll.textContent = "All People";
+  personSelect.appendChild(optAll);
+  const names = [...new Set(sessions.map(s => s.person || 'Juni'))].sort();
+  names.forEach(n => {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = n;
+    personSelect.appendChild(o);
+  });
+  const vals = Array.from(personSelect.options).map(o=>o.value);
+  personSelect.value = vals.includes(prevVal) ? prevVal : "__all__";
+}
 const resultsEl = document.getElementById('results');
 
 function populateTypeSelect(){
@@ -461,16 +473,19 @@ function populateTypeSelect(){
 function populateDateSelect(){
   const prevVal = dateSelect.value || "__all__";
   const typeFilter = typeSelect.value || "__all__";
+  const personFilter = personSelect.value || "__all__";
   dateSelect.innerHTML = '';
   const optAll = document.createElement('option');
   optAll.value = "__all__"; optAll.textContent = "All Dates";
   dateSelect.appendChild(optAll);
   sessions.slice().reverse().forEach(s => {
     if(typeFilter !== "__all__" && s.type !== typeFilter) return;
+    if(personFilter !== "__all__" && (s.person||'Juni') !== personFilter) return;
     const o = document.createElement('option');
     o.value = s.date;
     const typeTag = s.type ? ` [${s.type}]` : '';
-    o.textContent = s.date + (s.muscle ? `  —  ${s.muscle}` : '') + typeTag;
+    const personTagD = (s.person && s.person !== 'Juni') ? ` [${s.person}]` : '';
+    o.textContent = s.date + (s.muscle ? `  —  ${s.muscle}` : '') + typeTag + personTagD;
     dateSelect.appendChild(o);
   });
   const vals = Array.from(dateSelect.options).map(o=>o.value);
@@ -525,7 +540,12 @@ function renderExerciseCard(exName, typeFilter){
   typeFilter = typeFilter || "__all__";
   const group = muscleMap[exName] || "Other";
   const prFlags = computePrFlags(exName);
-  const filteredSessions = typeFilter === "__all__" ? sessions : sessions.filter(s => s.type === typeFilter);
+  const filteredSessions = sessions.filter(s => {
+    if(typeFilter !== "__all__" && s.type !== typeFilter) return false;
+    const pf = personSelect ? (personSelect.value||"__all__") : "__all__";
+    if(pf !== "__all__" && (s.person||'Juni') !== pf) return false;
+    return true;
+  });
   const maxSets = Math.max(1, ...filteredSessions.map(s => (cellData[exName][s.date]||{sets:[]}).sets.length));
 
   let lastLoad = null;
@@ -564,8 +584,9 @@ function renderExerciseCard(exName, typeFilter){
     const sat = s.satisfaction;
     const vol = sessionVolume(sets);
     const typeTag = s.type ? `<span style="font-size:.68rem;font-weight:500;color:${s.type==='Coach'?'#60a5fa':'#a3e635'};margin-left:6px;">${s.type}</span>` : '';
+    const personTag = (s.person && s.person !== 'Juni') ? `<span style="font-size:.68rem;font-weight:500;color:#f59e0b;margin-left:4px;">${s.person}</span>` : '';
     return `<tr title="${pr.note ? pr.note : ''}">
-      <td class="date-cell">${s.date}${typeTag}</td>
+      <td class="date-cell">${s.date}${typeTag}${personTag}</td>
       ${setCells}
       <td style="color:var(--muted);font-size:.82rem;">${vol !== null ? vol + ' kg' : '—'}</td>
       <td class="${satClass(sat)}">${sat !== null && sat !== undefined ? sat + '%' : '—'}</td>
@@ -585,7 +606,7 @@ function renderExerciseCard(exName, typeFilter){
     <div class="card-head"><h2>${exName}</h2><span class="group-tag">${group}</span></div>
     <div style="overflow-x:auto;">
     <table>
-      <thead><tr><th style="text-align:left;">Date</th>${headSets}<th>Volume</th><th>Satisfaction</th><th>Notes</th></tr></thead>
+      <thead><tr><th style="text-align:left;">Date</th>${headSets}<th>Satisfaction</th><th>Notes</th></tr></thead>
       <tbody>${rows.join('')}</tbody>
     </table>
     </div>
@@ -607,7 +628,7 @@ function renderDayCard(date){
     const sets = ex.sets || [];
 
     if(!sets.length){
-      return `<tr class="empty-row"><td class="date-cell">${ex.name}<div style="font-weight:400;font-size:.7rem;color:var(--muted);">${group}</div></td><td colspan="${maxSets}">— not logged —</td><td>—</td></tr>`;
+      return `<tr class="empty-row"><td class="date-cell">${ex.name}<div style="font-weight:400;font-size:.7rem;color:var(--muted);">${group}</div></td><td colspan="${maxSets}">— not logged —</td></tr>`;
     }
 
     // figure out load relative to the most recent prior session for highlight
@@ -658,13 +679,13 @@ function renderDayCard(date){
     <div class="card-head">
       <h2>${s.date}${s.muscle ? `  ·  ${s.muscle}` : ''}</h2>
       <div style="display:flex;gap:8px;align-items:center;">
-        ${typeBadge}
+        ${typeBadge}${personBadge}
         <span class="group-tag ${satClass(sat)}">${sat !== null && sat !== undefined ? 'Satisfaction ' + sat + '%' : 'Satisfaction —'}</span>
       </div>
     </div>
     <div style="overflow-x:auto;">
     <table>
-      <thead><tr><th style="text-align:left;">Exercise</th>${headSets}<th>Volume</th></tr></thead>
+      <thead><tr><th style="text-align:left;">Exercise</th>${headSets}</tr></thead>
       <tbody>${rows.join('')}</tbody>
     </table>
     </div>
@@ -755,9 +776,12 @@ function drawVolumeChart(){
   const typeFilter = typeSelect.value || "__all__";
   const chartEl = document.getElementById('volumeChart');
 
-  const filteredSessions = typeFilter === "__all__"
-    ? sessions
-    : sessions.filter(s => s.type === typeFilter);
+  const personFilter2 = personSelect.value || "__all__";
+  const filteredSessions = sessions.filter(s => {
+    if(typeFilter !== "__all__" && s.type !== typeFilter) return false;
+    if(personFilter2 !== "__all__" && (s.person||'Juni') !== personFilter2) return false;
+    return true;
+  });
 
   if(!filteredSessions.length){
     chartEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:8px 0;">No sessions to chart.</div>';
@@ -765,15 +789,8 @@ function drawVolumeChart(){
   }
 
   const sessionData = filteredSessions.map(s => {
-    let vol = 0;
-    s.exercises.forEach(ex => {
-      ex.sets.forEach(([r, w]) => {
-        const rv = repsValue(r);
-        const wv = loadValue(w);
-        if(rv && wv) vol += rv * wv;
-      });
-    });
-    return { date: s.date, muscle: s.muscle || '', type: s.type || 'Self', vol: Math.round(vol), sat: s.satisfaction };
+    const exCount = (s.exercises || []).filter(ex => ex.sets && ex.sets.length > 0).length;
+    return { date: s.date, muscle: s.muscle || '', type: s.type || 'Self', vol: exCount, sat: s.satisfaction, person: s.person || 'Juni' };
   });
 
   const maxVol = Math.max(...sessionData.map(d => d.vol), 1);
@@ -824,14 +841,14 @@ function drawVolumeChart(){
   let grid = '';
   [0.25, 0.5, 0.75, 1].forEach(frac => {
     const yg = H - Math.round(frac * H);
-    const label = (Math.round(frac * maxVol / 100) / 10).toFixed(1) + 'k';
+    const label = Math.round(frac * maxVol);
     grid += `<line x1="0" y1="${yg}" x2="${totalW}" y2="${yg}" stroke="#232c47" stroke-width="1"/>
       <text x="-4" y="${yg + 4}" text-anchor="end" font-size="9" fill="#4b5563">${label}</text>`;
   });
 
   chartEl.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <span style="font-size:.88rem;font-weight:600;color:var(--text);">Total Session Volume (kg)</span>
+      <span style="font-size:.88rem;font-weight:600;color:var(--text);">Exercises Per Session</span>
       <div style="display:flex;gap:14px;">
         <span style="font-size:.75rem;color:${coachColor};">● Coach</span>
         <span style="font-size:.75rem;color:${selfColor};">● Self</span>
@@ -852,7 +869,7 @@ function drawVolumeChart(){
         `<strong>${bar.dataset.date}</strong><br>` +
         `${bar.dataset.muscle}<br>` +
         `<span style="color:${bar.dataset.type==='Coach'?coachColor:selfColor}">${bar.dataset.type}</span><br>` +
-        `Volume: <strong>${Number(bar.dataset.vol).toLocaleString()} kg</strong><br>` +
+        `Exercises: <strong>${bar.dataset.vol}</strong><br>` +
         `Satisfaction: ${sat}`;
     });
     bar.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
@@ -868,6 +885,7 @@ function drawVolumeChart(){
 muscleSelect.addEventListener('change', () => { populateExerciseSelect(); updateBodyHighlight(muscleSelect.value); render(); });
 exerciseSelect.addEventListener('change', render);
 typeSelect.addEventListener('change', () => { populateDateSelect(); drawVolumeChart(); render(); });
+personSelect.addEventListener('change', () => { populateDateSelect(); drawVolumeChart(); render(); });
 dateSelect.addEventListener('change', () => {
   const isDate = dateSelect.value !== "__all__";
   muscleSelect.disabled = isDate;
@@ -893,6 +911,7 @@ async function init(){
   populateMuscleSelect();
   populateExerciseSelect();
   populateTypeSelect();
+  populatePersonSelect();
   populateDateSelect();
   drawVolumeChart();
   updateBodyHighlight("__all__");
@@ -938,7 +957,10 @@ init();
           </select>
         </div>
       </div>
-      <div class="field"><label>Notes</label><input type="text" id="rv_notes" style="width:100%;"></div>
+      <div class="review-row">
+        <div class="field"><label>Person</label><input type="text" id="rv_person" value="Juni" style="width:100%;"></div>
+        <div class="field"><label>Notes</label><input type="text" id="rv_notes" style="width:100%;"></div>
+      </div>
     </div>
     <div id="rvExList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;max-height:320px;overflow-y:auto;"></div>
     <button class="small-btn" id="rvAddEx" style="margin-bottom:12px;">+ Add exercise</button>
@@ -1289,6 +1311,7 @@ init();
     };
 
     document.getElementById('rv_date').value   = session.date;
+  if(document.getElementById('rv_person')) document.getElementById('rv_person').value = session.person || 'Juni';
     document.getElementById('rv_muscle').value = session.muscle;
     document.getElementById('rv_sat').value    = session.satisfaction;
     document.getElementById('rv_type').value   = session.type;
@@ -1358,6 +1381,7 @@ init();
       muscle:       document.getElementById('rv_muscle').value.trim(),
       satisfaction: satRaw==='' ? null : parseInt(satRaw,10),
       type:         document.getElementById('rv_type').value,
+      person:       (document.getElementById('rv_person').value.trim()) || 'Juni',
       notes:        document.getElementById('rv_notes').value.trim(),
       exercises:    []
     };
@@ -1433,7 +1457,7 @@ init();
       if(idx2>=0) sessions[idx2]=newSession; else sessions.push(newSession);
       sessions.sort((a,b)=>a.date<b.date?-1:1);
       rebuildCellData();
-      populateMuscleSelect(); populateExerciseSelect(); populateTypeSelect(); populateDateSelect();
+      populateMuscleSelect(); populateExerciseSelect(); populateTypeSelect(); populatePersonSelect(); populateDateSelect();
       drawVolumeChart(); updateBodyHighlight(muscleSelect.value); render();
 
       reviewOverlay.classList.remove('open');
