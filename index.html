@@ -113,6 +113,23 @@
   .small-btn{font-size:.78rem;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--accent);cursor:pointer;}
   .upload-status{font-size:.82rem;margin:8px 0;min-height:18px;}
   @media(max-width:600px){.review-row{grid-template-columns:1fr;}}
+
+  /* PR Modal */
+  .pr-group-header{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+    margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .pr-group-header:first-child{margin-top:0;}
+  .pr-exercise{margin-bottom:16px;}
+  .pr-exercise-name{font-weight:700;font-size:.95rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .pr-exercise-name .group-tag{font-size:.65rem;}
+  .pr-timeline{display:flex;flex-direction:column;gap:4px;}
+  .pr-row{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;font-size:.82rem;background:var(--panel2);}
+  .pr-row.current{background:var(--pr-bg);border:1px solid var(--pr);}
+  .pr-date{color:var(--muted);min-width:90px;font-size:.78rem;}
+  .pr-val{font-weight:700;flex:1;}
+  .pr-note{font-size:.72rem;color:var(--muted);font-style:italic;}
+  .pr-badge{font-size:.65rem;padding:1px 6px;border-radius:4px;font-weight:600;}
+  .pr-crown{font-size:.9rem;}
+  .pr-empty{color:var(--muted);font-style:italic;font-size:.85rem;padding:20px 0;text-align:center;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.3/heic2any.min.js"></script>
 </head>
@@ -125,6 +142,7 @@
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-shrink:0;">
       <button class="btn" id="pushBtn" style="display:none;">↑ Push to GitHub</button>
+      <button class="btn secondary" id="prBtn">🏆 PRs</button>
       <button class="btn" id="uploadWorkoutBtn">📷 Upload Workout</button>
       <button class="btn secondary" id="settingsBtn" title="GitHub settings">⚙ GitHub</button>
     </div>
@@ -916,6 +934,16 @@ async function init(){
 init();
 </script>
 <!-- Upload Workout Modal -->
+<!-- PR Modal -->
+<div class="overlay" id="prOverlay">
+  <div class="modal" style="max-width:660px;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h2 style="margin:0;">🏆 Personal Records</h2>
+      <button class="btn ghost" id="prClose">✕</button>
+    </div>
+    <div id="prContent"></div>
+  </div>
+</div>
 <div class="overlay" id="uploadOverlay">
   <div class="modal" style="max-width:620px;">
     <h2>Upload Today's Diary Page</h2>
@@ -1475,6 +1503,98 @@ init();
   });
 
 })();
+</script>
+
+
+<script>
+
+// ── PR Modal ─────────────────────────────────────────────────────────────────
+(function(){
+  const prBtn     = document.getElementById('prBtn');
+  const prOverlay = document.getElementById('prOverlay');
+  const prClose   = document.getElementById('prClose');
+  const prContent = document.getElementById('prContent');
+
+  if(prBtn) prBtn.addEventListener('click', () => { buildAndShowPRs(); prOverlay.classList.add('open'); });
+  if(prClose) prClose.addEventListener('click', () => prOverlay.classList.remove('open'));
+  if(prOverlay) prOverlay.addEventListener('click', e => { if(e.target===prOverlay) prOverlay.classList.remove('open'); });
+
+  function buildAndShowPRs(){
+    const GROUP_COLORS = {
+      "Hamstrings":"#DC6B6B","Glutes":"#E0954A","Back":"#4A7FC9","Back (Traps)":"#3D62A8",
+      "Quads":"#5FAE5A","Shoulders":"#8B6BC9","Biceps":"#C96B9E","Chest":"#3FAE9E",
+      "Triceps":"#C99A4A","Core":"#6B9E6B","Other":"#888888"
+    };
+
+    const grouped = {};
+    exerciseOrder.forEach(exName => {
+      const grp = muscleMap[exName] || "Other";
+      if(!grouped[grp]) grouped[grp] = [];
+      grouped[grp].push(exName);
+    });
+
+    let html = '';
+    let exWithPRs = 0;
+
+    const allGroups = [...groupOrder, "Other"];
+
+    allGroups.forEach(grp => {
+      if(!grouped[grp]) return;
+      let grpHtml = '';
+
+      grouped[grp].forEach(exName => {
+        const prFlags = computePrFlags(exName);
+        const prSessions = sessions.filter(s => {
+          const f = prFlags[s.date];
+          return f && f.isPr;
+        });
+        if(!prSessions.length) return;
+
+        exWithPRs++;
+
+        // Only the latest (current best)
+        const s = prSessions[prSessions.length - 1];
+        const ex = cellData[exName] ? cellData[exName][s.date] : null;
+        const sets = ex ? ex.sets : [];
+        const curLoad = topSetLoad(sets);
+
+        let topReps = '-', topWeight = '-';
+        if(sets.length){
+          sets.forEach(([r,w]) => {
+            if(loadValue(w) === curLoad){ topReps = r; topWeight = w; }
+          });
+        }
+
+        const typeColor = (s.type === 'Coach') ? '#60a5fa' : '#a3e635';
+        const color = GROUP_COLORS[grp] || '#888';
+
+        grpHtml +=
+          '<div class="pr-row current" style="margin-bottom:6px;">' +
+            '<span class="pr-val" style="min-width:180px;">' + exName + '</span>' +
+            '<span class="pr-date">' + s.date + '</span>' +
+            '<span class="pr-val">' + topReps + ' reps @ ' + topWeight + '</span>' +
+            '<span class="pr-badge" style="background:' + typeColor + '22;color:' + typeColor + ';">' + (s.type||'Self') + '</span>' +
+            '<span class="pr-crown">🏆</span>' +
+          '</div>';
+      });
+
+      if(grpHtml){
+        html +=
+          '<div class="pr-group-header">' + grp + '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">' + grpHtml + '</div>';
+      }
+    });
+
+    if(!html){
+      html = '<div class="pr-empty">No PRs yet — keep training! 💪</div>';
+    } else {
+      html = '<div style="font-size:.78rem;color:var(--muted);margin-bottom:16px;">Current best across ' + exWithPRs + ' exercises</div>' + html;
+    }
+
+    prContent.innerHTML = html;
+  }
+})();
+
 </script>
 </body>
 </html>
