@@ -2609,6 +2609,110 @@
     "person": "Juni"
   },
   {
+    "date": "2026-07-10",
+    "muscle": "Hams, Back",
+    "satisfaction": null,
+    "type": "Coach",
+    "person": "Juni",
+    "notes": "PRs on BOR and Lat Pulldown",
+    "exercises": [
+      {
+        "name": "Leg Curl",
+        "sets": [
+          [
+            "15",
+            "32"
+          ],
+          [
+            "15",
+            "40"
+          ],
+          [
+            "15",
+            "44"
+          ]
+        ]
+      },
+      {
+        "name": "Bent Over Row",
+        "sets": [
+          [
+            "15",
+            "7.5x2"
+          ],
+          [
+            "15",
+            "10x2"
+          ],
+          [
+            "8",
+            "15x2"
+          ],
+          [
+            "15",
+            "15x2"
+          ]
+        ]
+      },
+      {
+        "name": "Lat Pulldown (Mag Grip)",
+        "sets": [
+          [
+            "12",
+            "10"
+          ],
+          [
+            "10",
+            "11"
+          ]
+        ]
+      },
+      {
+        "name": "RDLs",
+        "sets": [
+          [
+            "15",
+            "7.5x2"
+          ],
+          [
+            "12",
+            "12.5x2"
+          ],
+          [
+            "3",
+            "17.5x2"
+          ]
+        ]
+      },
+      {
+        "name": "Split Squat (Glutes)",
+        "sets": [
+          [
+            "15",
+            "12"
+          ],
+          [
+            "15",
+            "12"
+          ]
+        ]
+      },
+      {
+        "name": "Sumo Squat",
+        "sets": [
+          [
+            "15",
+            "48"
+          ],
+          [
+            "12",
+            "56"
+          ]
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-08-07",
     "muscle": "Bi, Tri",
     "satisfaction": null,
