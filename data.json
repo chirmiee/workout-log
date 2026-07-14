@@ -2983,5 +2983,92 @@
         ]
       }
     ]
+  },
+  {
+    "date": "2026-07-14",
+    "muscle": "Back, Bi",
+    "satisfaction": 40,
+    "type": "Coach",
+    "person": "Juni",
+    "notes": "Not recovered, no sleep",
+    "exercises": [
+      {
+        "name": "Lat Pulldown (Mag Grip)",
+        "sets": [
+          [
+            "10",
+            "10"
+          ],
+          [
+            "6",
+            "11"
+          ],
+          [
+            "15",
+            "8"
+          ]
+        ]
+      },
+      {
+        "name": "T-Bar (Wide)",
+        "sets": [
+          [
+            "10",
+            "35"
+          ],
+          [
+            "11",
+            "25"
+          ],
+          [
+            "12",
+            "25"
+          ]
+        ]
+      },
+      {
+        "name": "Seated Cable Rowing (Close)",
+        "sets": [
+          [
+            "15",
+            "48"
+          ],
+          [
+            "10",
+            "56"
+          ]
+        ]
+      },
+      {
+        "name": "Cable Bent Over Row (Wide)",
+        "sets": [
+          [
+            "15",
+            "40"
+          ],
+          [
+            "15",
+            "40"
+          ]
+        ]
+      },
+      {
+        "name": "Shrugs",
+        "sets": [
+          [
+            "15",
+            "15x2"
+          ],
+          [
+            "15",
+            "15x2"
+          ],
+          [
+            "15",
+            "15x2"
+          ]
+        ]
+      }
+    ]
   }
 ]
