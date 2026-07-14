@@ -1,5 +1,100 @@
 [
   {
+    "date": "2022-07-13",
+    "muscle": "Quads, Glutes, Delts",
+    "satisfaction": 70,
+    "type": "Coach",
+    "person": "Juni",
+    "notes": "PR on Cable Squat and Hip Thrust",
+    "exercises": [
+      {
+        "name": "Leg Extn",
+        "sets": [
+          [
+            "18",
+            "7"
+          ],
+          [
+            "12",
+            "9"
+          ],
+          [
+            "9",
+            "11"
+          ]
+        ]
+      },
+      {
+        "name": "Cable Squat",
+        "sets": [
+          [
+            "12",
+            "24"
+          ],
+          [
+            "8",
+            "32"
+          ],
+          [
+            "8",
+            "36"
+          ],
+          [
+            "7",
+            "40"
+          ]
+        ]
+      },
+      {
+        "name": "Hip Thrust",
+        "sets": [
+          [
+            "15",
+            "15x2"
+          ],
+          [
+            "15",
+            "20x2"
+          ],
+          [
+            "13",
+            "32.5x2"
+          ]
+        ]
+      },
+      {
+        "name": "Split Squat (Quads)",
+        "sets": [
+          [
+            "12",
+            "10"
+          ],
+          [
+            "12",
+            "10"
+          ],
+          [
+            "12",
+            "10"
+          ]
+        ]
+      },
+      {
+        "name": "Seated DB OHP",
+        "sets": [
+          [
+            "12",
+            "10x2"
+          ],
+          [
+            "12",
+            "10x2"
+          ]
+        ]
+      }
+    ]
+  },
+  {
     "date": "2026-05-22",
     "muscle": "Hams, Glutes, Back",
     "satisfaction": 78,
@@ -2609,110 +2704,6 @@
     "person": "Juni"
   },
   {
-    "date": "2026-07-10",
-    "muscle": "Hams, Back",
-    "satisfaction": null,
-    "type": "Coach",
-    "person": "Juni",
-    "notes": "PRs on BOR and Lat Pulldown",
-    "exercises": [
-      {
-        "name": "Leg Curl",
-        "sets": [
-          [
-            "15",
-            "32"
-          ],
-          [
-            "15",
-            "40"
-          ],
-          [
-            "15",
-            "44"
-          ]
-        ]
-      },
-      {
-        "name": "Bent Over Row",
-        "sets": [
-          [
-            "15",
-            "7.5x2"
-          ],
-          [
-            "15",
-            "10x2"
-          ],
-          [
-            "8",
-            "15x2"
-          ],
-          [
-            "15",
-            "15x2"
-          ]
-        ]
-      },
-      {
-        "name": "Lat Pulldown (Mag Grip)",
-        "sets": [
-          [
-            "12",
-            "10"
-          ],
-          [
-            "10",
-            "11"
-          ]
-        ]
-      },
-      {
-        "name": "RDLs",
-        "sets": [
-          [
-            "15",
-            "7.5x2"
-          ],
-          [
-            "12",
-            "12.5x2"
-          ],
-          [
-            "3",
-            "17.5x2"
-          ]
-        ]
-      },
-      {
-        "name": "Split Squat (Glutes)",
-        "sets": [
-          [
-            "15",
-            "12"
-          ],
-          [
-            "15",
-            "12"
-          ]
-        ]
-      },
-      {
-        "name": "Sumo Squat",
-        "sets": [
-          [
-            "15",
-            "48"
-          ],
-          [
-            "12",
-            "56"
-          ]
-        ]
-      }
-    ]
-  },
-  {
     "date": "2026-07-08",
     "muscle": "Bi, Tri",
     "satisfaction": null,
@@ -2884,6 +2875,110 @@
           [
             "12",
             "4"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "date": "2026-07-10",
+    "muscle": "Hams, Back",
+    "satisfaction": null,
+    "type": "Coach",
+    "person": "Juni",
+    "notes": "PRs on BOR and Lat Pulldown",
+    "exercises": [
+      {
+        "name": "Leg Curl",
+        "sets": [
+          [
+            "15",
+            "32"
+          ],
+          [
+            "15",
+            "40"
+          ],
+          [
+            "15",
+            "44"
+          ]
+        ]
+      },
+      {
+        "name": "Bent Over Row",
+        "sets": [
+          [
+            "15",
+            "7.5x2"
+          ],
+          [
+            "15",
+            "10x2"
+          ],
+          [
+            "8",
+            "15x2"
+          ],
+          [
+            "15",
+            "15x2"
+          ]
+        ]
+      },
+      {
+        "name": "Lat Pulldown (Mag Grip)",
+        "sets": [
+          [
+            "12",
+            "10"
+          ],
+          [
+            "10",
+            "11"
+          ]
+        ]
+      },
+      {
+        "name": "RDLs",
+        "sets": [
+          [
+            "15",
+            "7.5x2"
+          ],
+          [
+            "12",
+            "12.5x2"
+          ],
+          [
+            "3",
+            "17.5x2"
+          ]
+        ]
+      },
+      {
+        "name": "Split Squat (Glutes)",
+        "sets": [
+          [
+            "15",
+            "12"
+          ],
+          [
+            "15",
+            "12"
+          ]
+        ]
+      },
+      {
+        "name": "Sumo Squat",
+        "sets": [
+          [
+            "15",
+            "48"
+          ],
+          [
+            "12",
+            "56"
           ]
         ]
       }
